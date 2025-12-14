@@ -8,7 +8,7 @@
 
     // Configuration
     const CONFIG = {
-        apiUrl: 'http://localhost:8000/api/v1',
+        apiUrl: window.AI_CHAT_API_URL || '/api/v1',
         sessionKey: 'ai_chat_session_id',
         maxMessageLength: 1000,
         typingDelay: 1500
