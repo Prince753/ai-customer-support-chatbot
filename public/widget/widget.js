@@ -58,7 +58,9 @@
     function attachEventListeners() {
         // Toggle chat window
         elements.toggle.addEventListener('click', toggleChat);
-        elements.minimizeBtn.addEventListener('click', toggleChat);
+        if (elements.minimizeBtn) {
+            elements.minimizeBtn.addEventListener('click', toggleChat);
+        }
 
         // Send message
         elements.sendBtn.addEventListener('click', sendMessage);
