@@ -19,13 +19,40 @@ class RAGService:
     """Service for RAG-based document retrieval and context generation."""
     
     def __init__(self):
-        self.settings = get_settings()
-        self.db = get_database()
-        self.openai = get_openai_service()
-        self.chunk_size = self.settings.RAG_CHUNK_SIZE
-        self.chunk_overlap = self.settings.RAG_CHUNK_OVERLAP
-        self.top_k = self.settings.RAG_TOP_K
-        logger.info("RAG service initialized")
+        self._initialized = False
+        self._settings = None
+        self._db = None
+        self._openai = None
+        self.chunk_size = 1000
+        self.chunk_overlap = 200
+        self.top_k = 5
+    
+    def _ensure_initialized(self):
+        """Lazy initialization of dependencies."""
+        if not self._initialized:
+            self._settings = get_settings()
+            self._db = get_database()
+            self._openai = get_openai_service()
+            self.chunk_size = self._settings.RAG_CHUNK_SIZE
+            self.chunk_overlap = self._settings.RAG_CHUNK_OVERLAP
+            self.top_k = self._settings.RAG_TOP_K
+            self._initialized = True
+            logger.info("RAG service initialized")
+    
+    @property
+    def db(self):
+        self._ensure_initialized()
+        return self._db
+    
+    @property
+    def openai(self):
+        self._ensure_initialized()
+        return self._openai
+    
+    @property
+    def settings(self):
+        self._ensure_initialized()
+        return self._settings
     
     async def get_relevant_context(
         self,

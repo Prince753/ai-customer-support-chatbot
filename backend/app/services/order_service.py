@@ -18,8 +18,20 @@ class OrderService:
     """Service for order-related operations."""
     
     def __init__(self):
-        self.db = get_database()
-        logger.info("Order service initialized")
+        self._db = None
+        self._initialized = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization of dependencies."""
+        if not self._initialized:
+            self._db = get_database()
+            self._initialized = True
+            logger.info("Order service initialized")
+    
+    @property
+    def db(self):
+        self._ensure_initialized()
+        return self._db
     
     async def get_order_status(self, order_id: str) -> Optional[Dict]:
         """

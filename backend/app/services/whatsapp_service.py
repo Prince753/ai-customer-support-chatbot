@@ -16,18 +16,30 @@ class WhatsAppService:
     """Service for WhatsApp Business API integration."""
     
     def __init__(self):
-        settings = get_settings()
-        self.token = settings.WHATSAPP_TOKEN
-        self.phone_id = settings.WHATSAPP_PHONE_ID
-        self.api_version = settings.WHATSAPP_API_VERSION
-        self.verify_token = settings.WHATSAPP_VERIFY_TOKEN
-        self.base_url = f"https://graph.facebook.com/{self.api_version}"
-        self.enabled = bool(self.token and self.phone_id)
-        
-        if self.enabled:
-            logger.info("WhatsApp service initialized")
-        else:
-            logger.warning("WhatsApp service disabled - missing credentials")
+        self._initialized = False
+        self.token = None
+        self.phone_id = None
+        self.api_version = "v18.0"
+        self.verify_token = "chatbot_verify_token"
+        self.base_url = None
+        self.enabled = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization of dependencies."""
+        if not self._initialized:
+            settings = get_settings()
+            self.token = settings.WHATSAPP_TOKEN
+            self.phone_id = settings.WHATSAPP_PHONE_ID
+            self.api_version = settings.WHATSAPP_API_VERSION
+            self.verify_token = settings.WHATSAPP_VERIFY_TOKEN
+            self.base_url = f"https://graph.facebook.com/{self.api_version}"
+            self.enabled = bool(self.token and self.phone_id)
+            self._initialized = True
+            
+            if self.enabled:
+                logger.info("WhatsApp service initialized")
+            else:
+                logger.warning("WhatsApp service disabled - missing credentials")
     
     async def send_message(
         self,
@@ -46,6 +58,7 @@ class WhatsAppService:
         Returns:
             API response or None on failure
         """
+        self._ensure_initialized()
         if not self.enabled:
             logger.warning("WhatsApp not configured, message not sent")
             return None
