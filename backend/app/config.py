@@ -22,17 +22,32 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     API_PREFIX: str = "/api/v1"
     
-    # OpenAI Configuration
-    OPENAI_API_KEY: str
+    # OpenAI Configuration (set empty defaults to prevent crash on missing env vars)
+    OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4-turbo-preview"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_MAX_TOKENS: int = 1000
     OPENAI_TEMPERATURE: float = 0.7
     
-    # Supabase Configuration
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
+    # Supabase Configuration (set empty defaults to prevent crash on missing env vars)
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
     SUPABASE_SERVICE_KEY: Optional[str] = None
+    
+    def is_configured(self) -> bool:
+        """Check if all required environment variables are set."""
+        return bool(self.OPENAI_API_KEY and self.SUPABASE_URL and self.SUPABASE_KEY)
+    
+    def get_missing_vars(self) -> list:
+        """Return list of missing required environment variables."""
+        missing = []
+        if not self.OPENAI_API_KEY:
+            missing.append("OPENAI_API_KEY")
+        if not self.SUPABASE_URL:
+            missing.append("SUPABASE_URL")
+        if not self.SUPABASE_KEY:
+            missing.append("SUPABASE_KEY")
+        return missing
     
     # WhatsApp Business API
     WHATSAPP_TOKEN: Optional[str] = None

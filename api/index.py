@@ -112,6 +112,16 @@ async def api_health():
 @app.get("/api/v1/debug")
 async def debug_info():
     """Debug endpoint to check configuration status."""
+    # Try to load settings and check configuration
+    try:
+        from app.config import get_settings
+        settings = get_settings()
+        is_configured = settings.is_configured()
+        missing_vars = settings.get_missing_vars()
+    except Exception as e:
+        is_configured = False
+        missing_vars = ["Error loading settings: " + str(e)]
+    
     # Check environment variables (only show if they exist, not their values)
     env_status = {
         "OPENAI_API_KEY": bool(os.getenv("OPENAI_API_KEY")),
@@ -122,9 +132,10 @@ async def debug_info():
     
     return {
         "router_status": router_status,
+        "is_fully_configured": is_configured,
+        "missing_env_vars": missing_vars,
         "environment_variables": env_status,
-        "python_path": os.environ.get("PYTHONPATH", "not set"),
-        "hint": "If router_status shows an error, check the environment variables above. All should be True."
+        "hint": "All environment variables must be set in Vercel Dashboard -> Settings -> Environment Variables"
     }
 
 
