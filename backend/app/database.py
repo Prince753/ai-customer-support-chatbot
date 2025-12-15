@@ -343,10 +343,11 @@ class Database:
             return []
 
 
-# Singleton instance
-db = Database()
 
+# Use lru_cache for lazy singleton instead of module-level instantiation
+from functools import lru_cache
 
+@lru_cache()
 def get_database() -> Database:
-    """Get the database singleton instance."""
-    return db
+    """Get the database singleton instance (lazy loaded)."""
+    return Database()
