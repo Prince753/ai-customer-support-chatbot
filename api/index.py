@@ -39,6 +39,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Track router loading status
+router_status = {"loaded": False, "error": None}
+
 # Import and include routers
 try:
     from app.routers import chat_router, orders_router, faqs_router, admin_router, whatsapp_router
@@ -49,11 +52,33 @@ try:
     app.include_router(admin_router, prefix="/api/v1")
     app.include_router(whatsapp_router, prefix="/api/v1")
     
+    router_status["loaded"] = True
     logger.info("All routers loaded successfully")
-except ImportError as e:
-    logger.error(f"Error importing routers: {e}")
-    # Fallback minimal API
-    pass
+except Exception as e:
+    import traceback
+    error_detail = traceback.format_exc()
+    router_status["error"] = str(e)
+    router_status["traceback"] = error_detail
+    logger.error(f"Error importing routers: {e}\n{error_detail}")
+    
+    # Add fallback chat endpoint
+    from pydantic import BaseModel
+    from typing import Optional
+    
+    class FallbackChatRequest(BaseModel):
+        message: str
+        session_id: Optional[str] = None
+    
+    @app.post("/api/v1/chat/")
+    async def fallback_chat(request: FallbackChatRequest):
+        """Fallback chat endpoint when full routers fail to load."""
+        return {
+            "response": "I'm sorry, but the AI service is currently unavailable. Please try again later or contact support directly.",
+            "session_id": request.session_id or "fallback",
+            "status": "error",
+            "error_detail": router_status.get("error", "Unknown error"),
+            "message": "Backend services failed to initialize. Check environment variables: OPENAI_API_KEY, SUPABASE_URL, SUPABASE_KEY"
+        }
 
 
 @app.get("/")
@@ -82,6 +107,25 @@ async def health_check():
 async def api_health():
     """API health check."""
     return {"status": "healthy"}
+
+
+@app.get("/api/v1/debug")
+async def debug_info():
+    """Debug endpoint to check configuration status."""
+    # Check environment variables (only show if they exist, not their values)
+    env_status = {
+        "OPENAI_API_KEY": bool(os.getenv("OPENAI_API_KEY")),
+        "SUPABASE_URL": bool(os.getenv("SUPABASE_URL")),
+        "SUPABASE_KEY": bool(os.getenv("SUPABASE_KEY")),
+        "ENVIRONMENT": os.getenv("ENVIRONMENT", "not set"),
+    }
+    
+    return {
+        "router_status": router_status,
+        "environment_variables": env_status,
+        "python_path": os.environ.get("PYTHONPATH", "not set"),
+        "hint": "If router_status shows an error, check the environment variables above. All should be True."
+    }
 
 
 # Error handler
