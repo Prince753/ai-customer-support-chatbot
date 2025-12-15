@@ -16,13 +16,32 @@ class OpenAIService:
     """Service for interacting with OpenAI API."""
     
     def __init__(self):
-        settings = get_settings()
-        self.client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
-        self.embedding_model = settings.OPENAI_EMBEDDING_MODEL
-        self.max_tokens = settings.OPENAI_MAX_TOKENS
-        self.temperature = settings.OPENAI_TEMPERATURE
-        logger.info(f"OpenAI service initialized with model: {self.model}")
+        self._client = None
+        self._initialized = False
+        self.model = None
+        self.embedding_model = None
+        self.max_tokens = None
+        self.temperature = None
+    
+    def _ensure_initialized(self):
+        """Ensure the OpenAI client is initialized."""
+        if not self._initialized:
+            settings = get_settings()
+            if not settings.OPENAI_API_KEY:
+                raise Exception("OpenAI not configured: OPENAI_API_KEY required")
+            self._client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            self.model = settings.OPENAI_MODEL
+            self.embedding_model = settings.OPENAI_EMBEDDING_MODEL
+            self.max_tokens = settings.OPENAI_MAX_TOKENS
+            self.temperature = settings.OPENAI_TEMPERATURE
+            self._initialized = True
+            logger.info(f"OpenAI service initialized with model: {self.model}")
+    
+    @property
+    def client(self):
+        """Get the OpenAI client."""
+        self._ensure_initialized()
+        return self._client
     
     async def generate_response(
         self,
@@ -44,6 +63,9 @@ class OpenAIService:
             Dict with response text and metadata
         """
         try:
+            # Ensure the service is initialized
+            self._ensure_initialized()
+            
             # Build messages array
             messages = []
             

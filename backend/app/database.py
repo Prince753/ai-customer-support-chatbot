@@ -18,6 +18,7 @@ class Database:
     
     _instance: Optional['Database'] = None
     _client: Optional[Client] = None
+    _initialized: bool = False
     
     def __new__(cls):
         if cls._instance is None:
@@ -25,17 +26,26 @@ class Database:
         return cls._instance
     
     def __init__(self):
+        # Lazy initialization - don't connect until actually needed
+        pass
+    
+    def _ensure_connected(self):
+        """Ensure database connection is established."""
         if self._client is None:
             settings = get_settings()
+            if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+                raise Exception("Database not configured: SUPABASE_URL and SUPABASE_KEY required")
             self._client = create_client(
                 settings.SUPABASE_URL,
                 settings.SUPABASE_KEY
             )
+            self._initialized = True
             logger.info("Supabase client initialized")
     
     @property
     def client(self) -> Client:
         """Get the Supabase client."""
+        self._ensure_connected()
         return self._client
     
     # ==================== Conversation Operations ====================
